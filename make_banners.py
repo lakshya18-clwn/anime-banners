@@ -89,7 +89,12 @@ def generate_pack():
             hd_shield.save(os.path.join(cit_dir, tex_name), "PNG")
 
             # Create OptiFine / CIT Resewn properties file
-            prop_content = f"type=item\nmatchItems=shield\ntexture={tex_name}\nnbt.display.Name=ippu:{color.capitalize()} Shield\n"
+            prop_content = (
+                f"type=item\n"
+                f"matchItems=minecraft:shield\n"
+                f"texture={tex_name}\n"
+                f"components.minecraft:custom_name=regex:.*(?i){color}.*\n"
+)
             with open(os.path.join(cit_dir, f"{color}_shield.properties"), "w") as f:
                 f.write(prop_content)
 

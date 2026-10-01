@@ -1,0 +1,31 @@
+name: Build Resource Pack
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Pillow
+      run: pip install pillow
+
+    - name: Run Builder Script
+      run: python make_banners.py
+
+    - name: Upload Resource Pack Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: AnimeBanners_1.21
+        path: AnimeBanners_1.21.zip

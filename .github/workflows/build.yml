@@ -27,5 +27,5 @@ jobs:
     - name: Upload Resource Pack Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: AnimeShields_1.21
-        path: AnimeShields_1.21.zip
+        name: AnimeShields_1.21.11
+        path: AnimeShields_1.21.11.zip

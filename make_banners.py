@@ -2,11 +2,13 @@ import os
 import zipfile
 from PIL import Image
 
-HD_CANVAS_SIZE = (512, 512)
-HD_FRONT_POS = (16, 16)
-HD_BACK_POS = (176, 16)
-HD_BANNER_SIZE = (160, 320)
+# 1024x1024 HD Shield Canvas (16x Vanilla Resolution)
+# Front face position: (32, 32), Size: (160, 320)
+HD_CANVAS_SIZE = (1024, 1024)
+HD_FRONT_POS = (32, 32)
+HD_FACE_SIZE = (160, 320)
 
+# Your exact mappings
 BANNER_MAPPINGS = {
     "light_gray": "cha hae in banner 2.jpg",
     "gray": "makima red_banner.jpg",
@@ -26,10 +28,12 @@ BANNER_MAPPINGS = {
     "pink": "marin1.jpg"
 }
 
-def process_hd_banner(image_path):
+def process_hd_shield(image_path):
     canvas = Image.new("RGBA", HD_CANVAS_SIZE, (0, 0, 0, 0))
     if os.path.exists(image_path):
         img = Image.open(image_path).convert("RGBA")
+        
+        # 1. Crop to shield ratio (160x320 -> 1:2)
         w, h = img.size
         target_ratio = 160 / 320
         img_ratio = w / h
@@ -43,39 +47,62 @@ def process_hd_banner(image_path):
             top = (h - new_h) // 2
             img = img.crop((0, top, w, top + new_h))
 
-        front_img = img.resize(HD_BANNER_SIZE, Image.Resampling.LANCZOS)
-        back_img = front_img.transpose(Image.FLIP_LEFT_RIGHT)
+        # 2. HD Lanczos Resampling
+        front_img = img.resize(HD_FACE_SIZE, Image.Resampling.LANCZOS)
 
+        # 3. Paste onto shield front face UV region
         canvas.paste(front_img, HD_FRONT_POS)
-        canvas.paste(back_img, HD_BACK_POS)
+    else:
+        print(f"Warning: File missing '{image_path}' — skipping.")
+        
     return canvas
 
 def generate_pack():
-    pack_name = "AnimeBannersPack"
-    banner_dir = os.path.join(pack_name, "assets", "minecraft", "textures", "entity", "banner")
-    os.makedirs(banner_dir, exist_ok=True)
+    pack_name = "AnimeShieldsPack"
+    
+    # Paths for Shield CIT
+    cit_dir = os.path.join(pack_name, "assets", "minecraft", "optifine", "cit", "shields")
+    os.makedirs(cit_dir, exist_ok=True)
 
+    # 1. pack.mcmeta
     mcmeta = '''{
   "pack": {
     "pack_format": 34,
-    "description": "HD Anime Banners for Minecraft 1.21"
+    "description": "HD Anime Shields for Minecraft 1.21"
   }
 }'''
     with open(os.path.join(pack_name, "pack.mcmeta"), "w") as f:
         f.write(mcmeta)
 
-    for color, filename in BANNER_MAPPINGS.items():
-        hd_banner = process_hd_banner(filename)
-        output_path = os.path.join(banner_dir, f"{color}.png")
-        hd_banner.save(output_path, "PNG")
+    # 2. Process default shield_base.png (using black/karuizawa as default base)
+    entity_dir = os.path.join(pack_name, "assets", "minecraft", "textures", "entity")
+    os.makedirs(entity_dir, exist_ok=True)
+    
+    default_shield = process_hd_shield(BANNER_MAPPINGS["black"])
+    default_shield.save(os.path.join(entity_dir, "shield_base.png"), "PNG")
 
-    zip_filename = "AnimeBanners_1.21.zip"
+    # 3. Generate CIT properties + textures for each character
+    for color, filename in BANNER_MAPPINGS.items():
+        if os.path.exists(filename):
+            hd_shield = process_hd_shield(filename)
+            tex_name = f"{color}_shield.png"
+            hd_shield.save(os.path.join(cit_dir, tex_name), "PNG")
+
+            # Create OptiFine / CIT Resewn properties file
+            prop_content = f"type=item\nmatchItems=shield\ntexture={tex_name}\nnbt.display.Name=ippu:{color.capitalize()} Shield\n"
+            with open(os.path.join(cit_dir, f"{color}_shield.properties"), "w") as f:
+                f.write(prop_content)
+
+    # 4. ZIP creation
+    zip_filename = "AnimeShields_1.21.zip"
     with zipfile.ZipFile(zip_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
         for root, _, files in os.walk(pack_name):
             for file in files:
                 abs_path = os.path.join(root, file)
                 rel_path = os.path.relpath(abs_path, pack_name)
                 zipf.write(abs_path, rel_path)
+
+    print(f"\nDone! Put '{zip_filename}' inside your resourcepacks folder.")
 
 if __name__ == "__main__":
     generate_pack()

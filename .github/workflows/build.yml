@@ -1,4 +1,4 @@
-name: Build Resource Pack
+name: pack maker
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ jobs:
     - name: Run Builder Script
       run: python make_banners.py
 
-    - name: Upload Resource Pack Artifact
+    - name: make pack
       uses: actions/upload-artifact@v4
       with:
         name: AnimeShields_1.21.11
